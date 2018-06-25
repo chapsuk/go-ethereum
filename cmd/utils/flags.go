@@ -48,6 +48,7 @@ import (
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/metrics/prometheus"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/discover"
@@ -531,6 +532,16 @@ var (
 		Name:  "shh.pow",
 		Usage: "Minimum POW accepted",
 		Value: whisper.DefaultMinimumPoW,
+	}
+
+	MetricsEnablePrometheusFlag = cli.BoolFlag{
+		Name:  "metrics.prometheus",
+		Usage: "Enable prometheus HTTP server",
+	}
+	MetricsPrometheusAddrFlag = cli.StringFlag{
+		Name:  "metrics.prometheus.addr",
+		Usage: "Prometheus server listening address",
+		Value: "localhost:9455",
 	}
 )
 
@@ -1182,6 +1193,20 @@ func RegisterEthStatsService(stack *node.Node, url string) {
 func SetupNetwork(ctx *cli.Context) {
 	// TODO(fjl): move target gas limit into config
 	params.TargetGasLimit = ctx.GlobalUint64(TargetGasLimitFlag.Name)
+}
+
+func SetupMetrics(ctx *cli.Context) {
+	if metrics.Enabled {
+		log.Info("Enabling metrics collection")
+		var (
+			enablePrometheus = ctx.GlobalBool(MetricsEnablePrometheusFlag.Name)
+			prometheusAddr   = ctx.GlobalString(MetricsPrometheusAddrFlag.Name)
+		)
+
+		if enablePrometheus {
+			go prometheus.Run(metrics.DefaultRegistry, prometheusAddr)
+		}
+	}
 }
 
 // MakeChainDatabase open an LevelDB using the flags passed to the client and will hard crash if it fails.

@@ -144,6 +144,11 @@ var (
 		utils.WhisperMaxMessageSizeFlag,
 		utils.WhisperMinPOWFlag,
 	}
+
+	metricsFlags = []cli.Flag{
+		utils.MetricsEnablePrometheusFlag,
+		utils.MetricsPrometheusAddrFlag,
+	}
 )
 
 func init() {
@@ -186,6 +191,7 @@ func init() {
 	app.Flags = append(app.Flags, consoleFlags...)
 	app.Flags = append(app.Flags, debug.Flags...)
 	app.Flags = append(app.Flags, whisperFlags...)
+	app.Flags = append(app.Flags, metricsFlags...)
 
 	app.Before = func(ctx *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -211,6 +217,7 @@ func init() {
 		// Start system runtime metrics collection
 		go metrics.CollectProcessMetrics(3 * time.Second)
 
+		utils.SetupMetrics(ctx)
 		utils.SetupNetwork(ctx)
 		return nil
 	}
